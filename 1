@@ -1,0 +1,28 @@
+#Procesamiento de paquete
+#Andres Verjan 07/12/2020 9:14 am
+
+
+import netCDF4 as nc
+import numpy as np
+from datetime import date
+
+#dia actual
+today = date.today()
+
+#Paquete de las 00 horas
+#pathFile = "WRF/wrfout_d01_"+str(today)+"_00.surface.nc.zip"
+
+pathFile = "WRF/paquete_completo.surface.nc"
+
+content = nc.Dataset(pathFile)
+
+#Sacamos variables
+lon,lat = content.variables["XLONG"], content.variables["XLAT"]
+
+
+#Recorremos la informacion
+for x in len(lon[0])
+    print(x)
+
+
+

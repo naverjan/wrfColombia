@@ -1,0 +1,22 @@
+VARIABLES
+
+XLAT = Latitud, size 379x379
+XLONG = Longitud, size 379x379
+HGT = Altitud, size 379x379
+
+
+////////////////
+Times = Horas (Correspondiente a las 121 horas)
+VARIABLES POR HORAS [120[379X379]]
+------------------------
+RAINC = LLuvias
+Q2 = Humedad especifica
+T2 = Temperatura
+U10 = Viento Zonal
+V10 = Viento meridional
+SWDOWN = Radiacion incidente
+PSFC = Presion en la superficie
+SST = Temperatura superficie del mar
+CLDFRA = Fraccion de nubes
+
+
