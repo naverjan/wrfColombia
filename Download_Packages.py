@@ -8,8 +8,8 @@ import ssl
 
 #Datos dei conexion
 server = 'aplicaciones.canalclima.com'
-user = 'ftpUser'
-password = 'S3rficorp'
+user = ''
+password = ''
 
 def connectionFtp(serve, us, pw):
     ftp = FTP()
