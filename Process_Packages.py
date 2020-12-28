@@ -7,7 +7,7 @@ import numpy as np
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-#import csv # se comenta porque ya nose utiliza
+import ConnectionDB
 
 #dia actual
 today = date.today()
