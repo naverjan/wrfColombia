@@ -10,16 +10,16 @@ import shutil
 
 #Datos dei conexion
 server = 'aplicaciones.canalclima.com'
-user = ''
-password = ''
+user = 'ftpUser'
+password = 'S3rficorp'
 
 #Fecha de hoy
 dateTemp = datetime.date.today()
 
-#Conexión via FTP
+''' Realiza la conexión vía FTP al servidor '''
 def connectionFtp(serve, us, pw):
     ftp = FTP()    
-    ftp.encoding = 'ISO-8859-1'    
+    ftp.encoding = 'ISO-8859-1'#Este codificación solo es necesario en Windows
     ftp.connect(serve)
     ftp.login(us, pw)
     return ftp
@@ -28,13 +28,16 @@ def connectionFtp(serve, us, pw):
 dir = "archive/%s/" %(dateTemp.strftime("%Y%m%d"))
 if not os.path.exists(dir): os.makedirs(dir)
 
-#Obtenemos el nombre del archivo
+''' Retorna el nombre del archivo '''
 def getNameFile():        
     date = dateTemp.strftime("%Y-%m-%d") 
-    return 'wrfout_d01_'+date+'_00.surface.nc.zip'
+    # return 'wrfout_d01_'+date+'_00.surface.nc.zip'
+    return 'wrfout_d01_2020-12-27_00.surface.nc.zip'
 
-#Extracción de zip
-def extractZip(filename):
+''' Extrae un archivo por nombre de archivo
+    Author: Andres Verjan
+    Date: 28/12/2020 '''
+def extractZipForFile(filename):
     pathFile = dir+filename
     pathExtract = dir
     fileZip = zipfile.ZipFile(pathFile, "r")
@@ -48,7 +51,29 @@ def extractZip(filename):
         shutil.rmtree(dir+'home')
         return 'Extracción exitosa'  
     except Exception as exc:
-        print(exc)
+        print('Ocurrio un error al extraer el archivo:',exc)
+
+''' Extrae un archivo por por ruta
+    Author: Andres Verjan
+    Date: 28/12/2020 '''
+def extractZipForPath(path):
+    contentDir = os.listdir(path)
+    pathExtract = dir
+    try:
+        for file in contentDir:
+            if os.path.isfile(os.path.join(dir, file)) and file.endswith('.zip'):
+                print(dir+file)
+                fileZip = zipfile.ZipFile(dir+file, "r")
+                nameFileInside = fileZip.namelist()
+                pathInside = str(nameFileInside[0])        
+                print('Extrayendo archivo %s' %(pathInside))
+                fileZip.extractall(pwd=None, path=pathExtract)  
+                print('Moviendo archivo a carptea raiz')
+                shutil.move(dir+pathInside, dir+file.replace('.zip', ''))
+                shutil.rmtree(dir+'home')
+        return 'Extracción exitosa'  
+    except Exception as exc:
+        print('Ocurrio un error al extraer el archivo: ',exc)
 
 #Tiempo inicial
 start_time = time.time()
@@ -74,8 +99,9 @@ minutes = round((time.time() - start_time)/60, 2)
 print('El tiempo de descarga en minutos fue: %s' %(minutes) )
 
 print('Descomprimiendo el archivo...')
-responseExtract = extractZip(file)
-print(responseExtract)
+
+response = extractZipForPath(dir)
+print(response)
 
 print('Cerrando conexión ftp')
 ftp.quit()
