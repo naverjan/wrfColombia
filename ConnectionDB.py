@@ -6,11 +6,9 @@ db = 'DBTEST'
 user = 'naverjan'
 pw = 'qwe123'
 
-def createConnection():
+def createConnectionSQLServer():
     try:
-        conn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server};SERVER=%s;DATABASE=%s;UID=%s+;PWD=%s' 
-            %(server, db, user, pw))
+        conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+db+';UID='+user+';PWD='+pw)
         return conn
     except Exception as ex:
         print("Ha ocurrido un error al conectarse a la DB:"+ex)

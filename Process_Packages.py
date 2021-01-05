@@ -4,18 +4,19 @@
 import os
 import netCDF4 as nc
 import numpy as np
-from datetime import date
-from datetime import datetime
+import datetime as datetime
 from datetime import timedelta
-import ConnectionDB
+import ConnectionDB as connection
+
 
 #dia actual
-today = date.today()
+today = datetime.date.today()
+
 
 #Paquete de las 00 horas
-#pathFile = "WRF/wrfout_d01_"+str(today)+"_00.surface.nc.zip"
+pathFile = "archive/%s/" %(today.strftime("%Y%m%d")) + "wrfout_d01_"+str(today)+"_00.surface.nc"
 
-pathFile = "archive/paquete_completo.surface.nc"
+# pathFile = "archive/paquete_completo.surface.nc"
 
 print("Abriendo archivo NetCDF")
 content = nc.Dataset(pathFile)
@@ -47,7 +48,7 @@ def convertKelvinToCelsius(kelvin):
 
 #Devuelve datetime coorespodiente a las 00 h utc Colombia
 def getDatetimeInit():
-    return datetime(today.year, today.month, today.day, 19, 00, 00000)
+    return datetime.datetime(today.year, today.month, today.day, 19, 00, 00000)
 
 def getDatetimeForHour(hour):
     date = getDatetimeInit()
@@ -59,6 +60,23 @@ def getHourUTC(hour):
     dateUTC = date + timedelta(hours=5)
     return dateUTC.hour
 
+#Obtenemos conexión
+print('Realizando conexión a la base de datos')
+conn = connection.createConnectionSQLServer()
+
+coordinates = []
+def createCoordinate(params):
+    try:
+        with conn.cursor() as cursor:
+            query = "INSERT INTO cc_location (code, longitude, latitude) VALUES (?,?,?,?)"
+            cursor.executemany(query, params)
+        print('Coordenadas insertadas correctamentes')
+    except Exception as exc:
+        print('Ocurrio un error al realizar la inserción '+ exc)
+
+
+position = 0
+
 print("Recolectando  informacion de las variables...")
 #Recorremos la informacion de las capas
 #for c2 in range(len(lon[0])):
@@ -66,33 +84,34 @@ for c2 in range(1):
    #Informacion de la tercera capa
    #for c3 in range(len(XLONG[0][c2])):
    for c3 in range(1):
+       position += 1       
        #Coordenada
-       coordinate = str(XLONG[0][c2][c3]) + str(XLAT[0][c2][c3])
-       print('Creando archivo para la coordenada {}'.format(coordinate))
-       #Creamos el archivo
-       file = open(dir +"prueba.txt", "w")
-       file.write("YY,MM,DD,HH,HF,RAINC,Q2,T2,U10,V10,SWDOWN,PSFC,SST,CLDFRA"+ os.linesep)
+       longitude    = str(XLONG[0][c2][c3]) 
+       latitude     = str(XLAT[0][c2][c3])
+       row = [str(position), None, str(longitude), str(latitude)]
+       coordinates.append(row)       
+
 
        ##Recorremos las 121 horas
-       for hour in range(len(Times)):
-           dateH = getDatetimeInit() if hour == 0 else getDatetimeForHour(hour)
-           hourUTC = getHourUTC(hour)
+    #    for hour in range(len(Times)):
+    #        dateH = getDatetimeInit() if hour == 0 else getDatetimeForHour(hour)
+    #        hourUTC = getHourUTC(hour)
 
-           #Sacamos los variables por hora
-           RAINH = RAINC[hour][0][c2][c3]
-           Q2H = Q2[hour][0][c2][c3]
-           T2H = convertKelvinToCelsius(T2[hour][0][c2][c3])
-           U10H = U10[hour][0][c2][c3]
-           V10H = V10[hour][0][c2][c3]
-           SWDOWNH = SWDOWN[hour][0][c2][c3]
-           PSFCH = PSFC[hour][0][c2][c3]
-           SSTH = SST[hour][0][c2][c3]
-           CLDFRAH = CLDFRA[hour][0][c2][c3]
+    #        #Sacamos los variables por hora
+    #        RAINH = RAINC[hour][0][c2][c3]
+    #        Q2H = Q2[hour][0][c2][c3]
+    #        T2H = convertKelvinToCelsius(T2[hour][0][c2][c3])
+    #        U10H = U10[hour][0][c2][c3]
+    #        V10H = V10[hour][0][c2][c3]
+    #        SWDOWNH = SWDOWN[hour][0][c2][c3]
+    #        PSFCH = PSFC[hour][0][c2][c3]
+    #        SSTH = SST[hour][0][c2][c3]
+    #        CLDFRAH = CLDFRA[hour][0][c2][c3] 
+    # 
 
-           #Escribimos los valores por hora
-           file.write(str(dateH.year)+","+str(dateH.month)+","+str(dateH.day)+","+str(dateH.hour)+","+str(hourUTC)+","+str(RAINH)+","+str(Q2H)+","+str(T2H)+","+str(U10H)+","+str(V10H)+","+str(SWDOWNH)+","+str(PSFCH)+","+str(SSTH)+","+str(CLDFRAH)+ os.linesep)
-
-       #Cerramos el archivo
-       file.close()
+print(coordinates)
+createCoordinate(coordinates)   
 
 
+print('Cerrando conexion a DB')
+conn.close()
