@@ -6,20 +6,27 @@ import netCDF4 as nc
 import numpy as np
 import datetime as datetime
 from datetime import timedelta
-import ConnectionDB as connection
-
+import FunctionsData as functions
+import time
 
 #dia actual
 today = datetime.date.today()
+idTime = today.strftime('%Y%m%d%H')
 
+#Buscamos archivo y sacamos informacion del nombre
+pathFile = "archive/%s/" %(today.strftime("%Y%m%d"))
+contentDir = os.listdir(pathFile)
+if len(contentDir) < 1:
+    raise SystemExit
 
-#Paquete de las 00 horas
-pathFile = "archive/%s/" %(today.strftime("%Y%m%d")) + "wrfout_d01_"+str(today)+"_00.surface.nc"
+file = contentDir[0]
+dateFile = file[11:24]#Sacamos la fecha del archivo
+dateFormatFile = datetime.datetime.strptime(dateFile, '%Y-%m-%d_%H')#Converti
+idRun = dateFormatFile.strftime('%Y%m%d%H')
 
-# pathFile = "archive/paquete_completo.surface.nc"
 
 print("Abriendo archivo NetCDF")
-content = nc.Dataset(pathFile)
+content = nc.Dataset(pathFile+file)
 
 print("Recolectando variables")
 #Sacamos variables de latitud y longitud 379x379
@@ -39,79 +46,88 @@ CLDFRA = content.variables["CLDFRA"] #Fraccion de nubes
 
 
 #Creamos carpeta donde se guardara la informacion de cada punto
-dir = "sites/"
-if not os.path.exists(dir): os.makedirs(dir)#Si no existe la crea
-
+# dir = "sites/"
+# if not os.path.exists(dir): os.makedirs(dir)#Si no existe la crea
 
 def convertKelvinToCelsius(kelvin):
     return round(kelvin - 273.15, 2)
 
 #Devuelve datetime coorespodiente a las 00 h utc Colombia
-def getDatetimeInit():
-    return datetime.datetime(today.year, today.month, today.day, 19, 00, 00000)
+def getDatetimeInit(hourRun):
+    if int(hourRun) == 0:
+        lastDay = today - timedelta(days=1)
+        return datetime.datetime(lastDay.year, lastDay.month, lastDay.day, 19, 00, 00000)
+    else:
+        return datetime.datetime(today.year, today.month, today.day, 7, 12, 00000)
 
-def getDatetimeForHour(hour):
-    date = getDatetimeInit()
+def getDatetimeForHour(hour, hourRun):
+    date = getDatetimeInit(hourRun)
     return date + timedelta(hours=hour)
 
 #De acuerdo a la hora Colombia obtenemos hora UTC
 def getHourUTC(hour):
-    date = getDatetimeForHour(hour)
+    date = getDatetimeForHour(hour, dateFormatFile.hour)
     dateUTC = date + timedelta(hours=5)
     return dateUTC.hour
 
-#Obtenemos conexión
-print('Realizando conexión a la base de datos')
-conn = connection.createConnectionSQLServer()
-
-coordinates = []
-def createCoordinate(params):
-    try:
-        with conn.cursor() as cursor:
-            query = "INSERT INTO cc_location (code, longitude, latitude) VALUES (?,?,?,?)"
-            cursor.executemany(query, params)
-        print('Coordenadas insertadas correctamentes')
-    except Exception as exc:
-        print('Ocurrio un error al realizar la inserción '+ exc)
-
-
+##Variables y arreglos a utilizar
 position = 0
+coordinates = []
+dataProcess = []
+
+#Medición de tiempo de ejecución
+start_time = time.time()
+
+
+# print('Creando registro de corrida de proceso')
+functions.insertRunProcess(id = idRun, idStatus = 1)
 
 print("Recolectando  informacion de las variables...")
 #Recorremos la informacion de las capas
-#for c2 in range(len(lon[0])):
+# for c2 in range(len(XLONG[0])):
 for c2 in range(1):
    #Informacion de la tercera capa
-   #for c3 in range(len(XLONG[0][c2])):
+#    for c3 in range(len(XLONG[0][c2])):
    for c3 in range(1):
-       position += 1       
-       #Coordenada
-       longitude    = str(XLONG[0][c2][c3]) 
-       latitude     = str(XLAT[0][c2][c3])
-       row = [str(position), None, str(longitude), str(latitude)]
-       coordinates.append(row)       
+       position += 1  
+       print('Punto: ' + str(position))     
+       ##Agregar informacioón para insrción de coordenadas
+    #    longitude    = str(XLONG[0][c2][c3]) 
+    #    latitude     = str(XLAT[0][c2][c3])
+    #    row = [position, None, longitude, latitude]
+    #    coordinates.append(row)       
 
 
        ##Recorremos las 121 horas
-    #    for hour in range(len(Times)):
-    #        dateH = getDatetimeInit() if hour == 0 else getDatetimeForHour(hour)
-    #        hourUTC = getHourUTC(hour)
+       for hour in range(len(Times)):
+           dateH = getDatetimeInit(dateFormatFile.hour) if hour == 0 else getDatetimeForHour(hour, dateFormatFile.hour)
+           hourUTC = getHourUTC(hour)        
 
-    #        #Sacamos los variables por hora
-    #        RAINH = RAINC[hour][0][c2][c3]
-    #        Q2H = Q2[hour][0][c2][c3]
-    #        T2H = convertKelvinToCelsius(T2[hour][0][c2][c3])
-    #        U10H = U10[hour][0][c2][c3]
-    #        V10H = V10[hour][0][c2][c3]
-    #        SWDOWNH = SWDOWN[hour][0][c2][c3]
-    #        PSFCH = PSFC[hour][0][c2][c3]
-    #        SSTH = SST[hour][0][c2][c3]
-    #        CLDFRAH = CLDFRA[hour][0][c2][c3] 
-    # 
-
-print(coordinates)
-createCoordinate(coordinates)   
+           #Sacamos los variables por hora
+           RAINH = str(RAINC[hour][0][c2][c3])
+           Q2H = str(Q2[hour][0][c2][c3])
+           T2H = str(convertKelvinToCelsius(T2[hour][0][c2][c3]))
+           U10H = str(U10[hour][0][c2][c3])
+           V10H = str(V10[hour][0][c2][c3])
+           SWDOWNH = str(SWDOWN[hour][0][c2][c3])
+           PSFCH = str(PSFC[hour][0][c2][c3])
+           SSTH = str(SST[hour][0][c2][c3])
+           CLDFRAH = str(CLDFRA[hour][0][c2][c3] )
 
 
-print('Cerrando conexion a DB')
-conn.close()
+           ##Arreglo por información
+           rowData = [idRun, functions.IDMODEL, idTime, position, dateH.year, dateH.month, dateH.day, dateH.hour, RAINH, Q2H, T2H, U10H, V10H, SWDOWNH, PSFCH, SSTH, CLDFRAH]           
+           dataProcess.append(rowData)
+    
+
+##Inserción de coordenadas
+# print('Insertando coordenadas')
+# functions.insertCoordinates(coordinates)
+
+##Inserción de registros
+print('Insertando información de variables')
+functions.insertDataProcess(dataProcess)
+
+#medicion de tiempo en minutos
+minutesExe = round((time.time() - start_time)/60, 2)
+print('El tiempo de ejecución en minutos es %s' %(minutesExe))

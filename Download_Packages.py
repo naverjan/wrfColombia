@@ -9,8 +9,8 @@ import subprocess# Utilizaciónde 7Zip
 
 #Datos dei conexion
 server = 'aplicaciones.canalclima.com'
-user = 'ftpUser'
-password = 'S3rficorp'
+user = ''
+password = ''
 
 #Fecha de hoy
 dateTemp = datetime.date.today()
@@ -92,7 +92,7 @@ print('Cerrando conexión ftp')
 ftp.quit()
 
 print('Descomprimiendo el archivo...')
-time.sleep(120)
+time.sleep(30)
 
 response = extractZipForPath(dir)
 print(response)
